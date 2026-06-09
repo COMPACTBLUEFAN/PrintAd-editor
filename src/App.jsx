@@ -17,6 +17,7 @@ function App() {
   const [transparentBg, setTransparentBg] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error'|'info', message: string }
   const [showTutorialModal, setShowTutorialModal] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
   
   const editorRef = useRef(null);
   const [editor, setEditor] = useState(null);
@@ -90,6 +91,13 @@ function App() {
         loader.style.opacity = '0';
         setTimeout(() => loader.remove(), 500);
       }
+      
+      // Инициализируем уровень зума
+      setZoomLevel(Math.round(e.Canvas.getZoom()));
+    });
+
+    e.on('canvas:zoom', () => {
+      setZoomLevel(Math.round(e.Canvas.getZoom()));
     });
 
     return () => {
@@ -326,7 +334,7 @@ function App() {
         <div className="topbar-group" style={{ alignItems: 'center' }}>
           <div className="zoom-controls" style={{ display: 'flex', gap: '5px', marginRight: '15px' }}>
             <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => handleZoom(-10)}>-</button>
-            <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => { if(editor) editor.Canvas.setZoom(100); }}>100%</button>
+            <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff', minWidth: '60px' }} onClick={() => { if(editor) editor.Canvas.setZoom(100); }}>{zoomLevel}%</button>
             <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => handleZoom(10)}>+</button>
           </div>
 
