@@ -210,24 +210,23 @@ function App() {
     localStorage.setItem('tutorialDone', 'true');
 
     const basicSteps = [
-      { element: '.topbar-group:nth-child(1)', popover: { title: 'Шаблоны', description: 'Выберите папку с шаблонами (например, Templates), а затем сам макет из выпадающего списка.', side: 'bottom', align: 'start' } },
-      { element: '.topbar-group:nth-child(2)', popover: { title: 'Сохранение', description: 'Выберите папку, куда будут сохраняться листовки, и введите имя файла.', side: 'bottom', align: 'start' } },
-      { element: '.topbar-group:nth-child(3)', popover: { title: 'Экспорт', description: 'Когда макет готов, выберите формат экспорта (PDF, PNG или HTML).', side: 'bottom', align: 'start' } },
-      { element: '.editor-workspace', popover: { title: 'Редактор', description: 'Рабочая область: Кликайте на текст для изменения, перетаскивайте любые элементы мышкой.', side: 'left', align: 'center' } },
-      { element: '.html-btn', popover: { title: 'Исходники (HTML)', description: 'При экспорте в HTML программа сохраняет всю структуру, чтобы вы могли вернуться к ней позже.', side: 'bottom', align: 'end' } },
-      { element: '.topbar-group:nth-child(3) label', popover: { title: 'Прозрачный фон', description: 'Эта галочка сделает "бумагу" невидимой при сохранении в PNG. Идеально для вставки на сайты.', side: 'bottom', align: 'center' } },
-      { element: '.zoom-controls', popover: { title: 'Масштабирование', description: 'Используйте эти кнопки для приближения или отдаления макета.', side: 'bottom', align: 'center' } },
-      { element: '.gjs-pn-panels', popover: { title: 'Панели свойств', description: 'Справа находятся слои макета и детальные настройки стилей.', side: 'left', align: 'start' } }
+      { element: '.topbar-group:nth-child(1)', popover: { title: '1. Шаблоны', description: 'Сначала выберите папку на компьютере, где лежат ваши шаблоны (например, папка Templates). Затем выберите конкретный макет из выпадающего списка.', side: 'bottom', align: 'start' } },
+      { element: '.topbar-group:nth-child(2)', popover: { title: '2. Сохранение', description: 'Укажите папку, куда будут сохраняться готовые листовки (например, Results). И введите имя файла (без расширения).', side: 'bottom', align: 'start' } },
+      { element: '.zoom-controls', popover: { title: 'Масштабирование', description: 'Используйте кнопки + и - для удобного зума. Также можно крутить колесико мыши с зажатым Ctrl.', side: 'bottom', align: 'center' } },
+      { element: '.editor-workspace', popover: { title: 'Редактор (Холст)', description: 'Это ваша рабочая область. Вы можете выделить любой текст двойным кликом, чтобы изменить его. Любой элемент можно перетащить мышкой.', side: 'left', align: 'center' } },
+      { element: '.gjs-pn-views-container', popover: { title: 'Правая панель', description: 'Здесь находятся настройки выделенного элемента: цвета, шрифты, отступы и блоки для добавления.', side: 'left', align: 'start' } },
+      { element: '.topbar-group:nth-child(3)', popover: { title: '3. Экспорт', description: 'Когда закончите редактирование, выберите нужный формат: PDF (для печати), PNG (картинка) или HTML (для разработчиков).', side: 'bottom', align: 'start' } }
     ];
 
     const advancedSteps = [
       ...basicSteps,
-      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(1)', popover: { title: 'Менеджер стилей', description: 'Здесь вы можете тонко настраивать выделенный элемент: менять шрифты, цвета, отступы (margin/padding), фон и тени.', side: 'left', align: 'start' } },
-      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(2)', popover: { title: 'Менеджер свойств (Traits)', description: 'Здесь находятся HTML-атрибуты элемента. Например, для ссылки вы можете указать URL, а для картинки — альтернативный текст.', side: 'left', align: 'start' } },
-      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(3)', popover: { title: 'Менеджер слоев', description: 'Если вы случайно удалили или потеряли элемент — найдите его здесь. Это дерево всех элементов на холсте. Их можно менять местами перетаскиванием.', side: 'left', align: 'start' } },
-      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(4)', popover: { title: 'Блоки (Компоненты)', description: 'Отсюда можно перетаскивать готовые компоненты (Текст, Картинка, Колонки) прямо на холст.', side: 'left', align: 'start' } },
-      { element: '.gjs-pn-devices-c', popover: { title: 'Адаптивность (Отзывчивость)', description: 'Переключайтесь между иконками Desktop, Tablet и Mobile, чтобы настроить стили элементов отдельно для разных экранов.', side: 'bottom', align: 'center' } },
-      { element: '.gjs-pn-options .gjs-pn-btn:nth-child(4)', popover: { title: 'Просмотр кода', description: 'Эта кнопка `</>` покажет чистый HTML и CSS текущего макета. Полезно для разработчиков.', side: 'bottom', align: 'start' } }
+      { element: '.topbar-group:nth-child(3) label', popover: { title: 'Прозрачный фон', description: 'Эта настройка убирает белый фон (бумагу) при экспорте в PNG. Полезно, если вы делаете наклейку или графику для вставки на сайт с другим фоном.', side: 'bottom', align: 'center' } },
+      { element: '.html-btn', popover: { title: 'Экспорт в HTML', description: 'Если вы не доделали макет и хотите сохранить его как черновик, экспортируйте в HTML. В следующий раз вы сможете просто положить этот HTML файл в папку шаблонов и продолжить работу с ним!', side: 'bottom', align: 'end' } },
+      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(4)', popover: { title: '➕ Добавление блоков', description: 'Иконка "Плюс" открывает панель блоков. Хватайте любой блок (Текст, Картинка, 2 Колонки) и тащите его прямо на холст. Так собирается структура макета.', side: 'left', align: 'start' } },
+      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(1)', popover: { title: '🎨 Менеджер стилей', description: 'Иконка "Кисточка". Выделите элемент на холсте и зайдите сюда. Здесь можно настроить вообще всё: изменить шрифт (Typography), задать цвет текста, добавить тени (Decorations) и сделать отступы (Margin/Padding).', side: 'left', align: 'start' } },
+      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(2)', popover: { title: '⚙️ Менеджер свойств', description: 'Иконка "Шестеренка". Здесь настраиваются технические параметры. Например, если вы выделили картинку, тут можно загрузить само изображение (параметр Src) или прописать ссылку.', side: 'left', align: 'start' } },
+      { element: '.gjs-pn-views .gjs-pn-btn:nth-child(3)', popover: { title: '📚 Менеджер слоев', description: 'Иконка "Слои". Это дерево всех элементов (как в Photoshop или Figma). Если элемент "спрятался" под другим или вы не можете по нему кликнуть — найдите его здесь в списке.', side: 'left', align: 'start' } },
+      { element: '.gjs-pn-options .gjs-pn-btn:nth-child(4)', popover: { title: 'Кнопка "Код" </>', description: 'Иконка `</>` на темной панели сверху. Открывает сырой HTML и CSS код. Вы можете напрямую вносить туда правки, если разбираетесь в веб-разработке.', side: 'bottom', align: 'start' } }
     ];
 
     const driverObj = driver({
@@ -325,13 +324,12 @@ function App() {
         </div>
 
         <div className="topbar-group" style={{ alignItems: 'center' }}>
-          {isReady && (
-            <div className="zoom-controls" style={{ display: 'flex', gap: '5px', marginRight: '15px' }}>
-              <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => handleZoom(-10)}>-</button>
-              <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => editor.Canvas.setZoom(100)}>100%</button>
-              <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => handleZoom(10)}>+</button>
-            </div>
-          )}
+          <div className="zoom-controls" style={{ display: 'flex', gap: '5px', marginRight: '15px' }}>
+            <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => handleZoom(-10)}>-</button>
+            <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => { if(editor) editor.Canvas.setZoom(100); }}>100%</button>
+            <button className="btn" style={{ padding: '8px 12px', backgroundColor: '#333', color: '#fff' }} onClick={() => handleZoom(10)}>+</button>
+          </div>
+
           <label style={{ marginRight: '10px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
             <input type="checkbox" checked={transparentBg} onChange={e => setTransparentBg(e.target.checked)} />
             Без фона (PNG)
