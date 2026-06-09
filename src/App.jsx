@@ -7,6 +7,18 @@ import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import './App.css';
 
+  const SIZES = {
+    free: { name: 'Свободный (На всё окно)', width: null, height: null },
+    classic: { name: 'Свободный (Классика А4)', width: null, height: null, isClassic: true },
+    a4: { name: 'A4 (210x297 мм)', width: '794px', height: '1123px' },
+    a4_landscape: { name: 'A4 Альбомный (297x210 мм)', width: '1123px', height: '794px' },
+    a3: { name: 'A3 (297x420 мм)', width: '1123px', height: '1587px' },
+    a2: { name: 'A2 (420x594 мм)', width: '1587px', height: '2245px' },
+    a1: { name: 'A1 (594x841 мм)', width: '2245px', height: '3179px' },
+    insta_post: { name: 'Instagram Пост', width: '1080px', height: '1080px' },
+    insta_story: { name: 'Instagram Сториз', width: '1080px', height: '1920px' }
+  };
+
 function App() {
   const [templateDir, setTemplateDir] = useState(null);
   const [templates, setTemplates] = useState([]);
@@ -15,6 +27,7 @@ function App() {
   const [exportFilename, setExportFilename] = useState('flyer_result');
   const [isExporting, setIsExporting] = useState(false);
   const [transparentBg, setTransparentBg] = useState(false);
+  const [canvasSize, setCanvasSize] = useState('free');
   const [toast, setToast] = useState(null); // { type: 'success'|'error'|'info', message: string }
   const [showTutorialModal, setShowTutorialModal] = useState(false);
   
@@ -199,6 +212,92 @@ function App() {
     }
   }, [selectedTemplate]);
 
+  const applyCanvasSize = (sizeId) => {
+    if (!editor) return;
+    
+    const size = SIZES[sizeId];
+    const wrapper = editor.Canvas.getFrameEl()?.parentElement; // .gjs-frame-wrapper
+    
+    if (wrapper) {
+      if (size && size.width && size.height) {
+        wrapper.style.width = size.width;
+        wrapper.style.height = size.height;
+        wrapper.style.margin = '0 auto';
+        wrapper.style.boxShadow = '0 0 20px rgba(0,0,0,0.2)';
+        wrapper.style.backgroundColor = 'white';
+        wrapper.style.transition = 'width 0.3s, height 0.3s';
+        wrapper.style.overflow = 'hidden';
+      } else {
+        wrapper.style.width = '100%';
+        wrapper.style.height = '100%';
+        wrapper.style.margin = '0';
+        wrapper.style.boxShadow = 'none';
+        wrapper.style.overflow = 'visible';
+      }
+    }
+
+    // Внутри iframe убираем скроллы, если задан жесткий размер
+    const doc = editor.Canvas.getDocument();
+    if (doc) {
+      let styleTag = doc.getElementById('canvas-size-style');
+      if (!styleTag) {
+        styleTag = doc.createElement('style');
+        styleTag.id = 'canvas-size-style';
+        doc.head.appendChild(styleTag);
+      }
+      if (size && size.width && size.height) {
+        styleTag.innerHTML = `
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-color: white;
+          }
+          .flyer {
+            width: 100% !important;
+            height: 100% !important;
+          }
+        `;
+      } else if (size && size.isClassic) {
+        styleTag.innerHTML = `
+          body {
+            margin: 0 !important;
+            padding: 40px !important;
+            background-color: transparent !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            min-height: 100vh !important;
+          }
+          .flyer {
+            width: 794px !important;
+            height: 1123px !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15) !important;
+            flex-shrink: 0 !important;
+          }
+        `;
+      } else {
+        styleTag.innerHTML = `
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        `;
+      }
+    }
+    
+    // Обновляем canvas чтобы он пересчитал позиционирование
+    setTimeout(() => editor.refresh(), 300);
+  };
+
+  const handleCanvasSizeChange = (e) => {
+    const sizeId = e.target.value;
+    setCanvasSize(sizeId);
+    applyCanvasSize(sizeId);
+  };
+
   const loadTemplate = async (path) => {
     const res = await window.electronAPI.readFile(path);
     if (res.success) {
@@ -211,6 +310,9 @@ function App() {
       content = content.replace(/src=['"](?!http|data:|file:)([^'"]+)['"]/gi, "src=\"" + baseUrl + "$1\"");
 
       editor.setComponents(content);
+      
+      // Применяем выбранный масштаб
+      setTimeout(() => applyCanvasSize(canvasSize), 100);
       
       // Тег <base> всё еще может быть полезен для других ресурсов.
       const wrapper = editor.Canvas.getDocument();
@@ -235,18 +337,30 @@ function App() {
     let finalHtmlContent = htmlContent;
     let finalCssContent = cssContent;
     
+    // Внедряем размеры холста в финальный CSS, если выбран формат
+    if (canvasSize && SIZES[canvasSize] && SIZES[canvasSize].width) {
+      finalCssContent += `\nhtml, body { width: ${SIZES[canvasSize].width} !important; height: ${SIZES[canvasSize].height} !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; box-sizing: border-box !important; position: relative; background-color: white; } .flyer { width: 100% !important; height: 100% !important; overflow: hidden !important; margin: 0 !important; border: none !important; box-sizing: border-box !important; }`;
+    } else if (canvasSize && SIZES[canvasSize] && SIZES[canvasSize].isClassic) {
+      finalCssContent += `\nbody { margin: 0 !important; padding: 0 !important; background-color: transparent !important; } .flyer { width: 794px !important; height: 1123px !important; box-shadow: none !important; margin: 0 !important; }`;
+    }
+    
     // Очищаем абсолютные пути обратно в относительные для чистой выгрузки ТОЛЬКО для HTML формата
     if (format === 'html') {
-      const baseUrl = 'file:///' + templateDir.replace(/\\/g, '/') + '/';
-      const regex = new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-      finalHtmlContent = finalHtmlContent.replace(regex, '');
-      finalCssContent = finalCssContent.replace(regex, '');
+      const rawBaseUrl = 'file:///' + templateDir.replace(/\\/g, '/') + '/';
+      const encodedBaseUrl = encodeURI(rawBaseUrl);
+
+      const regexRaw = new RegExp(rawBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const regexEncoded = new RegExp(encodedBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+      finalHtmlContent = finalHtmlContent.replace(regexRaw, '').replace(regexEncoded, '');
+      finalCssContent = finalCssContent.replace(regexRaw, '').replace(regexEncoded, '');
     }
 
     const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>${finalCssContent}</style>
 </head>
 <body>
@@ -263,7 +377,8 @@ function App() {
       outDir: exportDir,
       filename: exportFilename || 'output',
       baseDir: templateDir,
-      transparentBg
+      transparentBg,
+      canvasSize: SIZES[canvasSize]
     });
 
     setIsExporting(false);
@@ -300,7 +415,7 @@ function App() {
       { element: '.zoom-controls', popover: { title: 'Масштабирование', description: 'Используйте кнопки + и - для удобного зума. Также можно крутить колесико мыши с зажатым Ctrl.', side: 'bottom', align: 'center' } },
       { element: '.editor-workspace', popover: { title: 'Редактор (Холст)', description: 'Это ваша рабочая область. Вы можете выделить любой текст двойным кликом, чтобы изменить его. Любой элемент можно перетащить мышкой.', side: 'left', align: 'center' } },
       { element: '.gjs-pn-views-container', popover: { title: 'Правая панель', description: 'Здесь находятся настройки выделенного элемента: цвета, шрифты, отступы и блоки для добавления.', side: 'left', align: 'start' } },
-      { element: '.topbar-group:nth-child(3)', popover: { title: '3. Экспорт', description: 'Когда закончите редактирование, выберите нужный формат: PDF (для печати), PNG (картинка) или HTML (для разработчиков).', side: 'bottom', align: 'start' } }
+      { element: '.topbar-group:nth-child(3)', popover: { title: '3. Экспорт', description: 'Когда закончите редактирование, выберите нужный формат: PNG (картинка) или HTML (для разработчиков).', side: 'bottom', align: 'start' } }
     ];
 
     const advancedSteps = [
@@ -406,6 +521,17 @@ function App() {
         <div className="topbar-group">
           <button className="btn" onClick={handleSelectTemplateFolder}>1. Папка с шаблонами</button>
           <select 
+            value={canvasSize} 
+            onChange={handleCanvasSizeChange}
+            className="topbar-select"
+            title="Формат / Размер"
+          >
+            {Object.keys(SIZES).map(key => (
+              <option key={key} value={key}>{SIZES[key].name}</option>
+            ))}
+          </select>
+          
+          <select 
             className="select-box" 
             value={selectedTemplate} 
             onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -443,7 +569,6 @@ function App() {
             <input type="checkbox" checked={transparentBg} onChange={e => setTransparentBg(e.target.checked)} />
             Без фона (PNG)
           </label>
-          <button className="btn pdf-btn" disabled={!isReady} onClick={() => handleExport('pdf')}>В PDF</button>
           <button className="btn png-btn" disabled={!isReady} onClick={() => handleExport('png')}>В PNG</button>
           <button className="btn html-btn" disabled={!isReady} onClick={() => handleExport('html')}>В HTML</button>
           <button className="btn" style={{ background: 'transparent', border: '1px solid #ccc', color: '#333', marginLeft: '15px' }} onClick={() => setShowTutorialModal(true)}>❓ Помощь</button>

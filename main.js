@@ -77,12 +77,38 @@ ipcMain.handle('read-file', async (event, filePath) => {
   }
 });
 
-ipcMain.handle('export-template', async (event, { html, format, outDir, filename, baseDir, transparentBg }) => {
+ipcMain.handle('export-template', async (event, { html, format, outDir, filename, baseDir, transparentBg, canvasSize }) => {
   try {
     const outPath = path.join(outDir, `${filename}.${format}`);
     
     if (format === 'html') {
       fs.writeFileSync(outPath, html, 'utf-8');
+      
+      // Копируем только те файлы из cache, которые реально используются в HTML
+      const srcCache = path.join(baseDir, 'cache');
+      const destCache = path.join(outDir, 'cache');
+      if (fs.existsSync(srcCache) && srcCache !== destCache) {
+        const regex = /cache\/([^'"\s\)\\]+)/gi;
+        let match;
+        const usedFiles = new Set();
+        while ((match = regex.exec(html)) !== null) {
+          usedFiles.add(match[1]);
+        }
+        
+        if (usedFiles.size > 0) {
+          if (!fs.existsSync(destCache)) {
+            fs.mkdirSync(destCache, { recursive: true });
+          }
+          for (const file of usedFiles) {
+            const srcFile = path.join(srcCache, file);
+            const destFile = path.join(destCache, file);
+            if (fs.existsSync(srcFile)) {
+              fs.copyFileSync(srcFile, destFile);
+            }
+          }
+        }
+      }
+
       return { success: true, path: outPath };
     }
 
@@ -101,10 +127,18 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
     const tempHtmlPath = path.join(temptDir, `temp_render_${Date.now()}.html`);
     fs.writeFileSync(tempHtmlPath, finalHtml, 'utf-8');
 
+    // Определяем ширину и высоту окна на основе выбранного формата
+    let winWidth = 1920;
+    let winHeight = 1080;
+    if (canvasSize && canvasSize.width && canvasSize.height) {
+      winWidth = parseInt(canvasSize.width.replace('px', ''), 10);
+      winHeight = parseInt(canvasSize.height.replace('px', ''), 10);
+    }
+
     const renderWin = new BrowserWindow({
       show: false,
-      width: 794,
-      height: 1123,
+      width: winWidth, 
+      height: winHeight,
       transparent: transparentBg && format === 'png', // Важно для прозрачного PNG
       webPreferences: {
         nodeIntegration: false,
@@ -139,34 +173,48 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
     // Даем немного времени на перерисовку после загрузки
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Вычисляем реальную высоту контента
-    const dimensions = await renderWin.webContents.executeJavaScript(`
-      (() => {
-        const style = document.createElement('style');
-        style.textContent = 'html, body { padding: 0 !important; margin: 0 !important; background: transparent !important; min-height: 0 !important; width: fit-content !important; height: fit-content !important; overflow: hidden !important; } .flyer { box-shadow: none !important; margin: 0 !important; }';
-        document.head.appendChild(style);
-        
-        const flyer = document.querySelector('.flyer');
-        return {
-          width: flyer ? flyer.offsetWidth : document.documentElement.scrollWidth,
-          height: flyer ? flyer.offsetHeight : document.documentElement.scrollHeight
-        };
-      })();
-    `);
-      
-    // Устанавливаем высоту окна по контенту
-    renderWin.setContentSize(Math.round(dimensions.width), Math.round(dimensions.height));
+    // Вычисляем реальную высоту контента, если формат свободный
+    let finalWidth = winWidth;
+    let finalHeight = winHeight;
     
-    // Даем 200мс на перерисовку после изменения размера
-    await new Promise(resolve => setTimeout(resolve, 200));
+    if (!canvasSize || !canvasSize.width) {
+      const dimensions = await renderWin.webContents.executeJavaScript(`
+        (() => {
+          const style = document.createElement('style');
+          style.textContent = 'html, body { padding: 0 !important; margin: 0 !important; background: transparent !important; min-height: 0 !important; overflow: hidden !important; } .flyer { box-shadow: none !important; margin: 0 !important; }';
+          document.head.appendChild(style);
+          
+          const flyer = document.querySelector('.flyer');
+          return {
+            width: flyer ? flyer.offsetWidth : document.documentElement.scrollWidth,
+            height: flyer ? flyer.offsetHeight : document.documentElement.scrollHeight
+          };
+        })();
+      `);
+      finalWidth = Math.round(dimensions.width);
+      finalHeight = Math.round(dimensions.height);
+      renderWin.setContentSize(finalWidth, finalHeight);
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } else {
+      // Устанавливаем точный размер контента
+      renderWin.setContentSize(finalWidth, finalHeight);
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
 
     if (format === 'pdf') {
+      let pageSize;
+      if (canvasSize && canvasSize.pdfFormat) {
+        pageSize = canvasSize.pdfFormat; // Строка типа 'A4' или объект с микронами
+      } else {
+        pageSize = {
+          width: finalWidth * 264.5833, // Конвертация пикселей в микроны (96 DPI)
+          height: finalHeight * 264.5833
+        };
+      }
+      
       const pdfData = await renderWin.webContents.printToPDF({
         printBackground: true,
-        pageSize: {
-          width: Math.round(dimensions.width) * 264.5833, // Конвертация пикселей в микроны
-          height: Math.round(dimensions.height) * 264.5833
-        },
+        pageSize: pageSize,
         margins: { top: 0, bottom: 0, left: 0, right: 0 }
       });
       fs.writeFileSync(outPath, pdfData);
@@ -174,8 +222,8 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
       const image = await renderWin.webContents.capturePage({
         x: 0,
         y: 0,
-        width: Math.round(dimensions.width),
-        height: Math.round(dimensions.height)
+        width: finalWidth,
+        height: finalHeight
       });
       fs.writeFileSync(outPath, image.toPNG());
     }
