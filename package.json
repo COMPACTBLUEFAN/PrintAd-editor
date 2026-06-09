@@ -1,0 +1,44 @@
+{
+  "name": "print-ad-editor",
+  "version": "1.0.0",
+  "description": "Constructor for Skyline Pro Print Ads",
+  "main": "main.js",
+  "scripts": {
+    "start": "vite build && electron .",
+    "build": "vite build && electron-builder",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "driver.js": "^1.4.0",
+    "grapesjs": "^0.23.2",
+    "grapesjs-blocks-basic": "^1.0.2",
+    "grapesjs-preset-webpage": "^1.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3",
+    "jsdom": "^29.1.1",
+    "vite": "^4.5.14",
+    "vitest": "^4.1.8"
+  },
+  "build": {
+    "appId": "com.skylinepro.printadeditor",
+    "productName": "PrintAd Editor",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  }
+}

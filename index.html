@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkyLine Pro - PrintAd Constructor</title>
+  </head>
+  <style>
+    body { margin: 0; padding: 0; background-color: #1e1e1e; }
+    #initial-loader {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: #1e1e1e; z-index: 99999;
+      display: flex; flex-direction: column; justify-content: center; alignItems: center;
+      transition: opacity 0.5s ease;
+    }
+    .spinner {
+      width: 50px; height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: #3b82f6;
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text {
+      color: #ccc; font-family: sans-serif; margin-top: 20px; font-size: 16px;
+      text-align: center;
+    }
+  </style>
+  <body>
+    <div id="initial-loader">
+      <div class="spinner"></div>
+      <div class="loader-text">Загрузка редактора...</div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

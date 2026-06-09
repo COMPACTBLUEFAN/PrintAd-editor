@@ -1,0 +1,33 @@
+node_modules/
+dist/
+dist-electron/
+release/
+build/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Исполняемые файлы
+*.exe
+*.dll
+*.so
+*.dylib
+*.dmg
+*.AppImage
+
+# Логи
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Настройки редактора
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
