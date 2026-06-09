@@ -90,6 +90,84 @@ function App() {
         loader.style.opacity = '0';
         setTimeout(() => loader.remove(), 500);
       }
+
+      // Добавляем Inter в список шрифтов
+      const sm = e.StyleManager;
+      const fontProp = sm.getProperty('typography', 'font-family');
+      if (fontProp) {
+        fontProp.set('options', [
+          { id: 'Arial, Helvetica, sans-serif', label: 'Arial' },
+          { id: '"Inter", sans-serif', label: 'Inter (Корпоративный)' },
+          { id: 'Tahoma, Geneva, sans-serif', label: 'Tahoma' },
+          { id: '"Times New Roman", Times, serif', label: 'Times New Roman' },
+          { id: 'Georgia, serif', label: 'Georgia' }
+        ]);
+      }
+
+      // Добавляем подсказки 'i'
+      const helpTexts = {
+        'Text section': 'Готовая секция с текстом. Удобно для создания абзацев.',
+        '1 Column': 'Блок на 1 колонку. Занимает всю ширину.',
+        '2 Columns': 'Разбивает пространство на 2 равные колонки.',
+        '3 Columns': 'Разбивает пространство на 3 колонки.',
+        '2 Columns 3/7': '2 колонки с разными пропорциями (одна меньше, другая больше).',
+        'Text': 'Обычный текстовый блок. Перетащите на холст, чтобы добавить надпись.',
+        'Link': 'Текст-ссылка. Можно настроить URL, куда она ведет.',
+        'Image': 'Картинка. После добавления дважды кликните, чтобы загрузить своё фото.',
+        'Video': 'Видео-плеер (YouTube, Vimeo).',
+        'Map': 'Интерактивная Google Карта.',
+        'Link Block': 'Блок-ссылка. Внутрь него можно положить картинку или текст, и всё это будет кликабельно.',
+        'Quote': 'Цитата с красивым оформлением.',
+        
+        'General': 'Общие настройки (Float, Display, Position). Отвечают за базовое расположение элемента.',
+        'Flex': 'Настройки Flexbox. Очень мощный инструмент для выравнивания элементов внутри блоков (по центру, по краям и т.д.).',
+        'Dimension': 'Размеры: Ширина (Width), Высота (Height). Отступы: Margin (снаружи) и Padding (внутри).',
+        'Typography': 'Шрифты, размер текста, цвет, выравнивание (по левому/правому краю).',
+        'Decorations': 'Украшения: цвет фона (Background), рамки (Border), скругление углов (Radius) и тени.',
+        'Extra': 'Дополнительные настройки (переходы, трансформации).',
+        
+        'Id': 'Уникальный идентификатор элемента. Нужен для привязки ссылок или стилей.',
+        'Title': 'Всплывающая подсказка при наведении мышкой на элемент.',
+        'Src': 'Путь к файлу картинки или ссылка.',
+        'Alt': 'Альтернативный текст для картинки (если она не загрузилась).'
+      };
+
+      const injectHelpIcons = () => {
+        const targets = document.querySelectorAll('.gjs-block-label, .gjs-sm-title, .gjs-trt-label, .gjs-label');
+        targets.forEach(el => {
+          if (!el.querySelector('.help-icon') && !el.closest('.gjs-layer-title')) {
+            const text = el.innerText.trim();
+            if (helpTexts[text]) {
+              const i = document.createElement('span');
+              i.className = 'help-icon';
+              i.innerText = 'i';
+              i.onmousedown = (event) => event.stopPropagation();
+              i.onmouseup = (event) => event.stopPropagation();
+              i.onclick = (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                const driverObj = driver({
+                  showProgress: false,
+                  showButtons: ['close'],
+                  doneBtnText: 'Понятно',
+                  steps: [
+                    { element: i, popover: { title: text, description: helpTexts[text], side: 'left', align: 'center' } }
+                  ]
+                });
+                driverObj.drive();
+              };
+              el.appendChild(i);
+            }
+          }
+        });
+      };
+
+      const container = document.querySelector('.gjs-pn-views-container');
+      if (container) {
+        const observer = new MutationObserver(() => injectHelpIcons());
+        observer.observe(container, { childList: true, subtree: true });
+        injectHelpIcons();
+      }
     });
 
     return () => {
@@ -154,18 +232,25 @@ function App() {
     let htmlContent = editor.getHtml();
     const cssContent = editor.getCss();
     
-    // Очищаем абсолютные пути обратно в относительные для чистой выгрузки
-    const baseUrl = 'file:///' + templateDir.replace(/\\/g, '/') + '/';
-    htmlContent = htmlContent.replace(new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '');
+    let finalHtmlContent = htmlContent;
+    let finalCssContent = cssContent;
+    
+    // Очищаем абсолютные пути обратно в относительные для чистой выгрузки ТОЛЬКО для HTML формата
+    if (format === 'html') {
+      const baseUrl = 'file:///' + templateDir.replace(/\\/g, '/') + '/';
+      const regex = new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      finalHtmlContent = finalHtmlContent.replace(regex, '');
+      finalCssContent = finalCssContent.replace(regex, '');
+    }
 
     const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <style>${cssContent}</style>
+  <style>${finalCssContent}</style>
 </head>
 <body>
-  ${htmlContent}
+  ${finalHtmlContent}
 </body>
 </html>`;
 
@@ -242,6 +327,30 @@ function App() {
 
   return (
     <div className="app-container" style={{ flexDirection: 'column' }}>
+      <style>{`
+        .help-icon {
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background-color: rgba(255,255,255,0.2);
+          color: #fff;
+          font-size: 10px;
+          font-family: sans-serif;
+          margin-left: 6px;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          vertical-align: middle;
+          position: relative;
+          z-index: 10000;
+          pointer-events: auto !important;
+        }
+        .help-icon:hover {
+          background-color: rgba(255,255,255,0.5);
+        }
+      `}</style>
       
       {/* Кастомное уведомление */}
       {toast && (
