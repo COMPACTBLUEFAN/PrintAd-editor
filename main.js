@@ -124,6 +124,17 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
       });
       fs.writeFileSync(outPath, pdfData);
     } else if (format === 'png') {
+      // Вычисляем реальную высоту контента
+      const contentHeight = await renderWin.webContents.executeJavaScript(
+        'Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight)'
+      );
+      
+      // Устанавливаем высоту окна по контенту
+      renderWin.setContentSize(794, contentHeight);
+      
+      // Даем 200мс на перерисовку после изменения размера
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const image = await renderWin.webContents.capturePage();
       fs.writeFileSync(outPath, image.toPNG());
     }
