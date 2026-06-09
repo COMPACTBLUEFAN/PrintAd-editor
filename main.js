@@ -126,12 +126,22 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
       fs.writeFileSync(outPath, pdfData);
     } else if (format === 'png') {
       // Вычисляем реальную высоту контента
-      const contentHeight = await renderWin.webContents.executeJavaScript(
-        'Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight)'
-      );
+      const dimensions = await renderWin.webContents.executeJavaScript(`
+      (() => {
+        const style = document.createElement('style');
+        style.textContent = 'html, body { padding: 0 !important; margin: 0 !important; background: transparent !important; min-height: 0 !important; width: fit-content !important; height: fit-content !important; overflow: hidden !important; } .flyer { box-shadow: none !important; margin: 0 !important; }';
+        document.head.appendChild(style);
+        
+        const flyer = document.querySelector('.flyer');
+        return {
+          width: flyer ? flyer.offsetWidth : document.documentElement.scrollWidth,
+          height: flyer ? flyer.offsetHeight : document.documentElement.scrollHeight
+        };
+      })();
+    `);
       
       // Устанавливаем высоту окна по контенту
-      renderWin.setContentSize(794, contentHeight);
+      renderWin.setContentSize(dimensions.width, dimensions.height);
       
       // Даем 200мс на перерисовку после изменения размера
       await new Promise(resolve => setTimeout(resolve, 200));
