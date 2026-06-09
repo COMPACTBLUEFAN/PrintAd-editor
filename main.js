@@ -113,20 +113,34 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
     });
 
     await renderWin.loadFile(tempHtmlPath);
-    
-    // Даем немного времени на загрузку картинок
-    await new Promise(resolve => setTimeout(resolve, 800));
 
-    if (format === 'pdf') {
-      const pdfData = await renderWin.webContents.printToPDF({
-        printBackground: true,
-        pageSize: 'A4',
-        marginsType: 1 // No margin
-      });
-      fs.writeFileSync(outPath, pdfData);
-    } else if (format === 'png') {
-      // Вычисляем реальную высоту контента
-      const dimensions = await renderWin.webContents.executeJavaScript(`
+    // Ожидаем окончания загрузки всех картинок, чтобы не было пустых блоков или QR-кодов
+    await renderWin.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const checkImages = () => {
+          const images = Array.from(document.images);
+          const unloaded = images.filter(img => !img.complete);
+          if (unloaded.length === 0) resolve();
+          else {
+            let loadedCount = 0;
+            unloaded.forEach(img => {
+              img.onload = img.onerror = () => {
+                loadedCount++;
+                if (loadedCount === unloaded.length) resolve();
+              };
+            });
+          }
+        };
+        if (document.readyState === 'complete') checkImages();
+        else window.addEventListener('load', checkImages);
+      })
+    `);
+
+    // Даем немного времени на перерисовку после загрузки
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Вычисляем реальную высоту контента
+    const dimensions = await renderWin.webContents.executeJavaScript(`
       (() => {
         const style = document.createElement('style');
         style.textContent = 'html, body { padding: 0 !important; margin: 0 !important; background: transparent !important; min-height: 0 !important; width: fit-content !important; height: fit-content !important; overflow: hidden !important; } .flyer { box-shadow: none !important; margin: 0 !important; }';
@@ -140,13 +154,29 @@ ipcMain.handle('export-template', async (event, { html, format, outDir, filename
       })();
     `);
       
-      // Устанавливаем высоту окна по контенту
-      renderWin.setContentSize(dimensions.width, dimensions.height);
-      
-      // Даем 200мс на перерисовку после изменения размера
-      await new Promise(resolve => setTimeout(resolve, 200));
+    // Устанавливаем высоту окна по контенту
+    renderWin.setContentSize(Math.round(dimensions.width), Math.round(dimensions.height));
+    
+    // Даем 200мс на перерисовку после изменения размера
+    await new Promise(resolve => setTimeout(resolve, 200));
 
-      const image = await renderWin.webContents.capturePage();
+    if (format === 'pdf') {
+      const pdfData = await renderWin.webContents.printToPDF({
+        printBackground: true,
+        pageSize: {
+          width: Math.round(dimensions.width) * 264.5833, // Конвертация пикселей в микроны
+          height: Math.round(dimensions.height) * 264.5833
+        },
+        margins: { top: 0, bottom: 0, left: 0, right: 0 }
+      });
+      fs.writeFileSync(outPath, pdfData);
+    } else if (format === 'png') {
+      const image = await renderWin.webContents.capturePage({
+        x: 0,
+        y: 0,
+        width: Math.round(dimensions.width),
+        height: Math.round(dimensions.height)
+      });
       fs.writeFileSync(outPath, image.toPNG());
     }
 
