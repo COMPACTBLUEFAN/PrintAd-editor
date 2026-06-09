@@ -9,6 +9,7 @@ function createWindow() {
     width: 1300,
     height: 900,
     title: 'PrintAd Constructor',
+    backgroundColor: '#1e1e1e',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
