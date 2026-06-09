@@ -39,6 +39,9 @@
     ],
     "win": {
       "target": "portable"
+    },
+    "portable": {
+      "splashImage": "build/splash.bmp"
     }
   }
 }
